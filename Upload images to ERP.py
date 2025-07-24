@@ -10,21 +10,20 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Configuration
-EXCEL_FILE = 'File with codes path'
+EXCEL_FILE = 'path_to_codes.xlsx' 
 IMAGE_FOLDER = "Folder were images were saved (see prevoius code)"
-LOGIN_URL = "web app"
-EMAIL = "user@email.com"
-PASSWORD = "********"
+LOGIN_URL = "web.app"  #private
+EMAIL = "user@email.com"  #private
+PASSWORD = "********"  #private
 
 # Create codes DB, some products
 df = pd.read_excel(EXCEL_FILE)
 df["clave1 *"] = df["clave1 *"].astype(str)
 pattern = r"^\d{4}-\d{4}$"
 
-# Type manual codes to test 
-codes = df[df["clave1 *"].str.match(pattern, na=False)]["clave1 *"].tolist()
+codes = df[df["clave1 *"].str.match(pattern, na=False)]["clave1 *"].tolist() # To test, just create a manual list of 2 or three products
 
-# Run headless after testing
+# Run headless only after testing
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--window-size=1920,1080")
@@ -57,13 +56,13 @@ productos_button.click()
 time.sleep(1)
 
 # Uploading Loop
-logs = []
+logs = [] # I didn't really use the logs file but its ok to keep it 
 
 for code in tqdm(codes, desc="Uploading images", dynamic_ncols=True):
     try:
         img_path = os.path.join(IMAGE_FOLDER, f"{code}.jpg")
         if not os.path.exists(img_path):
-            logs.append({"code": code, "status": "skipped", "message": "Image not found"})
+            logs.append({"code": code, "status": "skipped", "message": "Image not found"}) #some products were deleted from supplier's website and might not have an image available
             continue
 
         # 1: Search the product
@@ -73,8 +72,9 @@ for code in tqdm(codes, desc="Uploading images", dynamic_ncols=True):
         search_box.send_keys(Keys.DELETE)
         search_box.send_keys(code)
         search_box.send_keys(Keys.ENTER)
-        time.sleep(1)
+        time.sleep(1) # probably avoidable
 
+        # This turned to be unnecesary since the product is autmatically selected after searching
         """ 
         # 2: Click the first result
         table_rows = wait.until(EC.presence_of_element_located(
@@ -94,7 +94,7 @@ for code in tqdm(codes, desc="Uploading images", dynamic_ncols=True):
         )))
         driver.execute_script("arguments[0].style.border='2px solid red'", edit_button)
         edit_button.click()
-        time.sleep(1)
+        time.sleep(1)  # Probably avoidable
 
         # 4: Upload the image
         upload_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@type='file']")))
@@ -106,7 +106,7 @@ for code in tqdm(codes, desc="Uploading images", dynamic_ncols=True):
             (By.CLASS_NAME, "MuiButton-containedSuccess")
         ))
         save_button.click()
-        time.sleep(1)
+        time.sleep(1) # Probably avoidable
 
         logs.append({"code": code, "status": "uploaded", "message": "Image uploaded successfully"})
 
@@ -114,7 +114,7 @@ for code in tqdm(codes, desc="Uploading images", dynamic_ncols=True):
         logs.append({"code": code, "status": "error", "message": str(e)})
         continue
 
-# Save results and quit
+# Quit and save logs
 driver.quit()
 pd.DataFrame(logs).to_csv("upload_log.csv", index=False)
 print("✅ Upload complete. Log saved to upload_log.csv")
